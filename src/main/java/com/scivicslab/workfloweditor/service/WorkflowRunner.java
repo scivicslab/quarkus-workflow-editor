@@ -2,14 +2,18 @@ package com.scivicslab.workfloweditor.service;
 
 import com.scivicslab.pojoactor.core.Action;
 import com.scivicslab.pojoactor.core.ActionResult;
+import com.scivicslab.pojoactor.core.distributed.NodeInfo;
+import com.scivicslab.pojoactor.core.distributed.RemoteActorRef;
 import com.scivicslab.turingworkflow.workflow.IIActorRef;
 import com.scivicslab.turingworkflow.workflow.IIActorSystem;
 import com.scivicslab.turingworkflow.workflow.Interpreter;
 import com.scivicslab.turingworkflow.workflow.InterpreterIIAR;
+import com.scivicslab.turingworkflow.workflow.RemoteActorIIAR;
 import com.scivicslab.workfloweditor.rest.WorkflowResource.WorkflowEvent;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
@@ -36,6 +40,9 @@ public class WorkflowRunner {
 
     private static final String DEFAULT_INTERPRETER_NAME = "interpreter";
 
+    @Inject
+    ChildNodeRegistry childNodes;
+
     private IIActorSystem system;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private volatile boolean stopRequested = false;
@@ -58,6 +65,34 @@ public class WorkflowRunner {
         system.addIIActor(interpActor);
         defaultInterp.setSelfActorRef(interpActor);
         currentInterpreter = defaultInterp;
+
+        registerChildNodeActors();
+    }
+
+    /**
+     * Lets a workflow name an actor that lives in one of the configured child processes.
+     *
+     * <p>Registered as a factory rather than as actors, because the children's actors are made
+     * while this editor is already running — a conversation in
+     * {@code chat-ui-with-audit-trail} appears when someone opens a tab — so there is nothing to
+     * enumerate at startup. The factory is consulted only for names this system does not have and
+     * that no built-in claims ({@code RemoteChildActor_260906_oo01}).
+     */
+    private void registerChildNodeActors() {
+        if (childNodes.nodeNames().isEmpty()) {
+            return;
+        }
+        system.addActorFactory(actorName -> {
+            ChildNodeRegistry.Target target = childNodes.resolve(actorName);
+            if (target == null) {
+                return null;
+            }
+            NodeInfo node = childNodes.node(target.nodeName());
+            logger.info("Actor " + actorName + " will be called on " + node.getAddress());
+            return new RemoteActorIIAR(
+                    actorName, new RemoteActorRef(target.remoteActorName(), node), system);
+        });
+        logger.info("Child nodes available to workflows: " + childNodes.nodeNames());
     }
 
     public IIActorSystem getSystem() {
