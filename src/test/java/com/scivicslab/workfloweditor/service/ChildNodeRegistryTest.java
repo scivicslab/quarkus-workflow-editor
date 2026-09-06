@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.scivicslab.pojoactor.distributed.DistributedActorSystem;
@@ -18,6 +19,7 @@ import com.scivicslab.pojoactor.distributed.NodeInfo;
  * Reading the configured child nodes, and turning an actor name written in a workflow into the
  * node it belongs to.
  */
+@Tag("RemoteChildActor_ChildNodes_260906_oo01")
 @DisplayName("ChildNodeRegistry — which process an actor name names")
 class ChildNodeRegistryTest {
 

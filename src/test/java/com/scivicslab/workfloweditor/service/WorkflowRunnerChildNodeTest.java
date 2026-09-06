@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.scivicslab.turingworkflow.workflow.IIActorRef;
@@ -20,6 +21,7 @@ import com.scivicslab.pojoactor.distributed.RemoteActorIIAR;
  * That is what makes this a unit test — the child does not have to be running for the editor to
  * know where the name would go.
  */
+@Tag("RemoteChildActor_Resolution_260906_oo01")
 @DisplayName("WorkflowRunner — naming an actor in a child process")
 class WorkflowRunnerChildNodeTest {
 

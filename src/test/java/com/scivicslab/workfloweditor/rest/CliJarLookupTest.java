@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
  * {@code turing-workflow-3.7.0-shaded.jar} (runnable). Picking by highest name takes the first,
  * because {@code .} sorts after {@code -}, and the command the UI shows would not start.
  */
+@Tag("CodingStandard_ShadedJarLookup_260401_oo01")
 @DisplayName("CLI jar lookup — picking the runnable jar out of the repository")
 class CliJarLookupTest {
 
