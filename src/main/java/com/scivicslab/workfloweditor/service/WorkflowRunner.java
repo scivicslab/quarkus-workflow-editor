@@ -2,13 +2,13 @@ package com.scivicslab.workfloweditor.service;
 
 import com.scivicslab.pojoactor.core.Action;
 import com.scivicslab.pojoactor.core.ActionResult;
-import com.scivicslab.pojoactor.core.distributed.NodeInfo;
-import com.scivicslab.pojoactor.core.distributed.RemoteActorRef;
+import com.scivicslab.pojoactor.distributed.NodeInfo;
+import com.scivicslab.pojoactor.distributed.RemoteActorRef;
 import com.scivicslab.turingworkflow.workflow.IIActorRef;
 import com.scivicslab.turingworkflow.workflow.IIActorSystem;
 import com.scivicslab.turingworkflow.workflow.Interpreter;
 import com.scivicslab.turingworkflow.workflow.InterpreterIIAR;
-import com.scivicslab.turingworkflow.workflow.RemoteActorIIAR;
+import com.scivicslab.pojoactor.distributed.RemoteActorIIAR;
 import com.scivicslab.workfloweditor.rest.WorkflowResource.WorkflowEvent;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.annotation.PostConstruct;

@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.scivicslab.pojoactor.core.distributed.DistributedActorSystem;
-import com.scivicslab.pojoactor.core.distributed.NodeInfo;
+import com.scivicslab.pojoactor.distributed.DistributedActorSystem;
+import com.scivicslab.pojoactor.distributed.NodeInfo;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

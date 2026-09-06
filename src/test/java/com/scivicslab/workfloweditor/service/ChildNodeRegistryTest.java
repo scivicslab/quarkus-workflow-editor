@@ -11,8 +11,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.scivicslab.pojoactor.core.distributed.DistributedActorSystem;
-import com.scivicslab.pojoactor.core.distributed.NodeInfo;
+import com.scivicslab.pojoactor.distributed.DistributedActorSystem;
+import com.scivicslab.pojoactor.distributed.NodeInfo;
 
 /**
  * Reading the configured child nodes, and turning an actor name written in a workflow into the

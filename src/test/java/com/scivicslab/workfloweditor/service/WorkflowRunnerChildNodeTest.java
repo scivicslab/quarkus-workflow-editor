@@ -11,7 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.scivicslab.turingworkflow.workflow.IIActorRef;
-import com.scivicslab.turingworkflow.workflow.RemoteActorIIAR;
+import com.scivicslab.pojoactor.distributed.RemoteActorIIAR;
 
 /**
  * Whether a workflow can name an actor in a child process.
