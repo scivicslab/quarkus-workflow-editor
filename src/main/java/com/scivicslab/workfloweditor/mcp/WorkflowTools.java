@@ -1,7 +1,7 @@
 package com.scivicslab.workfloweditor.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.scivicslab.pojoactor.core.ActionResult;
+import com.scivicslab.pojoactor.action.ActionResult;
 import com.scivicslab.workfloweditor.rest.WorkflowResource;
 import com.scivicslab.workfloweditor.service.WorkflowRunner;
 import com.scivicslab.workfloweditor.service.WorkflowState;

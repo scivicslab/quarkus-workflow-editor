@@ -1,7 +1,7 @@
 package com.scivicslab.workfloweditor.service;
 
-import com.scivicslab.pojoactor.core.Action;
-import com.scivicslab.pojoactor.core.ActionResult;
+import com.scivicslab.pojoactor.action.Action;
+import com.scivicslab.pojoactor.action.ActionResult;
 import com.scivicslab.pojoactor.distributed.NodeInfo;
 import com.scivicslab.pojoactor.distributed.RemoteActorRef;
 import com.scivicslab.turingworkflow.workflow.IIActorRef;

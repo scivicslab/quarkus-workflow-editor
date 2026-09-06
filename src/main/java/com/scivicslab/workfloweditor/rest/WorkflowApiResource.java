@@ -1,6 +1,6 @@
 package com.scivicslab.workfloweditor.rest;
 
-import com.scivicslab.pojoactor.core.ActionResult;
+import com.scivicslab.pojoactor.action.ActionResult;
 import com.scivicslab.workfloweditor.rest.WorkflowResource.WorkflowEvent;
 import com.scivicslab.workfloweditor.service.CatalogScanner;
 import com.scivicslab.workfloweditor.service.WorkflowRunner;
