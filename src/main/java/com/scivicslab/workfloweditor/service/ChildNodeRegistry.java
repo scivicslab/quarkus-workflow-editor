@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.scivicslab.pojoactor.core.distributed.DistributedActorSystem;
 import com.scivicslab.pojoactor.core.distributed.NodeInfo;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -22,8 +23,13 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
  * at a different process by changing configuration alone
  * ({@code RemoteChildActor_260906_oo01}).
  *
- * <p>Configured as {@code workflow-editor.child-nodes=chat-ui=127.0.0.1:28116}, comma-separated.
- * Unset means no child nodes, and every actor name resolves the way it did before.
+ * <p>Configured as {@code workflow-editor.child-nodes=chat-ui=127.0.0.1:28030}, comma-separated.
+ * <strong>The port configured is the child's HTTP port</strong> — the one its Web UI answers on
+ * and the only one a person sees. The port its actors answer on is derived from that by
+ * {@link DistributedActorSystem#publicationPortFor(int)}, the same definition the child uses to
+ * decide where to publish, so neither side has to be told the other's number.
+ *
+ * <p>Unset means no child nodes, and every actor name resolves the way it did before.
  */
 @ApplicationScoped
 public class ChildNodeRegistry {
@@ -69,7 +75,8 @@ public class ChildNodeRegistry {
             throw new IllegalArgumentException(
                     "workflow-editor.child-nodes port is not a number in: " + entry, e);
         }
-        return new NodeInfo(nameOf(entry), host, port);
+        // The configured number is the child's HTTP port; what a caller connects to is derived.
+        return new NodeInfo(nameOf(entry), host, DistributedActorSystem.publicationPortFor(port));
     }
 
     /** @return the configured node names, in the order they were configured */

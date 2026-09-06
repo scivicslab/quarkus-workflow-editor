@@ -11,6 +11,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.scivicslab.pojoactor.core.distributed.DistributedActorSystem;
 import com.scivicslab.pojoactor.core.distributed.NodeInfo;
 
 /**
@@ -28,21 +29,27 @@ class ChildNodeRegistryTest {
         assertNull(registry.resolve("chat-ui:project1/chat-01.chat"));
     }
 
+    /**
+     * What is configured is the child's HTTP port — the one a person can see, and the only one
+     * that appears anywhere else. The port its actors answer on is derived from that, by the same
+     * definition the child itself uses, so neither side is configured with the other's number.
+     */
     @Test
-    void readsNameAndAddress() {
-        ChildNodeRegistry registry = new ChildNodeRegistry(Optional.of(List.of("chat-ui=127.0.0.1:28116")));
+    void configuresTheHttpPortAndDerivesTheOneActorsAnswerOn() {
+        ChildNodeRegistry registry = new ChildNodeRegistry(Optional.of(List.of("chat-ui=127.0.0.1:28030")));
 
         NodeInfo node = registry.node("chat-ui");
 
         assertEquals("chat-ui", node.getNodeId());
         assertEquals("127.0.0.1", node.getHost());
-        assertEquals(28116, node.getPort());
+        assertEquals(DistributedActorSystem.publicationPortFor(28030), node.getPort());
+        assertEquals(29030, node.getPort());
     }
 
     /** The part after the first colon is the actor's name in its own process, slashes and all. */
     @Test
     void splitsAtTheFirstColonOnly() {
-        ChildNodeRegistry registry = new ChildNodeRegistry(Optional.of(List.of("chat-ui=127.0.0.1:28116")));
+        ChildNodeRegistry registry = new ChildNodeRegistry(Optional.of(List.of("chat-ui=127.0.0.1:28030")));
 
         ChildNodeRegistry.Target target = registry.resolve("chat-ui:project1/chat-01.chat");
 
@@ -52,7 +59,7 @@ class ChildNodeRegistryTest {
 
     @Test
     void aNameWithNoConfiguredNodeIsNotClaimed() {
-        ChildNodeRegistry registry = new ChildNodeRegistry(Optional.of(List.of("chat-ui=127.0.0.1:28116")));
+        ChildNodeRegistry registry = new ChildNodeRegistry(Optional.of(List.of("chat-ui=127.0.0.1:28030")));
 
         assertNull(registry.resolve("calc:3"));
         assertNull(registry.resolve("log"));

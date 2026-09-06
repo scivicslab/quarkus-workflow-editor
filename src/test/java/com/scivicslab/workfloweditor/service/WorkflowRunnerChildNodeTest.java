@@ -32,7 +32,7 @@ class WorkflowRunnerChildNodeTest {
 
     @Test
     void aNameQualifiedByAConfiguredNodeResolvesToAProxy() {
-        WorkflowRunner runner = runnerWith(Optional.of(List.of("chat-ui=127.0.0.1:28116")));
+        WorkflowRunner runner = runnerWith(Optional.of(List.of("chat-ui=127.0.0.1:28030")));
 
         IIActorRef<?> actor = runner.getSystem().getIIActor("chat-ui:project1/chat-01.chat");
 
@@ -43,7 +43,7 @@ class WorkflowRunnerChildNodeTest {
     /** The editor's own actors keep answering to their own names. */
     @Test
     void localActorsAreUnaffected() {
-        WorkflowRunner runner = runnerWith(Optional.of(List.of("chat-ui=127.0.0.1:28116")));
+        WorkflowRunner runner = runnerWith(Optional.of(List.of("chat-ui=127.0.0.1:28030")));
 
         assertNotNull(runner.getSystem().getIIActor("log"));
         assertNotNull(runner.getSystem().getIIActor("shell"));
