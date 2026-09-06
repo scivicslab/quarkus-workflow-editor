@@ -49,14 +49,14 @@
         <dependency>
             <groupId>com.scivicslab</groupId>
             <artifactId>pojo-actor</artifactId>
-            <version>3.6.0-SNAPSHOT</version>
+            <version>4.0.0-SNAPSHOT</version>
         </dependency>
 
         <!-- Turing-workflow engine -->
         <dependency>
             <groupId>com.scivicslab</groupId>
             <artifactId>turing-workflow</artifactId>
-            <version>3.7.0</version>
+            <version>4.0.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
