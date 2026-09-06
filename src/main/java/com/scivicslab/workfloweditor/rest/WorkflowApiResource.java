@@ -489,21 +489,38 @@ public class WorkflowApiResource {
     }
 
     private String findTuringWorkflowJar() {
-        var m2 = java.nio.file.Path.of(System.getProperty("user.home"), ".m2", "repository",
-                "com", "scivicslab", "turing-workflow");
-        try (var stream = java.nio.file.Files.walk(m2, 2)) {
+        return findRunnableJarIn(java.nio.file.Path.of(System.getProperty("user.home"), ".m2",
+                "repository", "com", "scivicslab", "turing-workflow"), "turing-workflow");
+    }
+
+    /**
+     * The newest jar under {@code repository} that {@code java -jar} can actually start.
+     *
+     * <p>turing-workflow installs two jars per version: {@code turing-workflow-<v>.jar} holds its
+     * classes and declares its dependencies in the pom, and {@code turing-workflow-<v>-shaded.jar}
+     * bundles them and carries the Main-Class (CodingStandard_260401_oo01 section 6). Only the
+     * second one runs. Picking by highest name takes the first, because {@code .} sorts after
+     * {@code -}, so the classifier has to be matched rather than sorted around.
+     *
+     * @param repository the artifact's directory in the local Maven repository
+     * @param artifactId the artifact's id, which its file names start with
+     * @return the path of the newest runnable jar, or the bare file name when none is installed
+     */
+    static String findRunnableJarIn(java.nio.file.Path repository, String artifactId) {
+        String prefix = artifactId + "-";
+        String suffix = "-shaded.jar";
+        try (var stream = java.nio.file.Files.walk(repository, 2)) {
             return stream
                     .filter(p -> {
                         String n = p.getFileName().toString();
-                        return n.startsWith("turing-workflow-") && n.endsWith(".jar")
-                                && !n.contains("sources") && !n.contains("javadoc");
+                        return n.startsWith(prefix) && n.endsWith(suffix);
                     })
-                    .sorted(java.util.Comparator.reverseOrder())
                     .map(java.nio.file.Path::toString)
+                    .sorted(java.util.Comparator.reverseOrder())
                     .findFirst()
-                    .orElse("turing-workflow.jar");
+                    .orElse(artifactId + ".jar");
         } catch (Exception e) {
-            return "turing-workflow.jar";
+            return artifactId + ".jar";
         }
     }
 
