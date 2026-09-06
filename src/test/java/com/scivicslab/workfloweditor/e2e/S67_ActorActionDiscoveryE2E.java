@@ -31,8 +31,7 @@ public class S67_ActorActionDiscoveryE2E {
 
     private void docsLinkExists_forActorWithJavadoc() {
         page.navigate(url);
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
         page.waitForSelector("#actorTreeBody .tree-node");
 
         // loader has Javadoc-backed actions (loadJar, createChild)
@@ -51,8 +50,7 @@ public class S67_ActorActionDiscoveryE2E {
 
     private void docsLinkFormat_loadJarHref() {
         page.navigate(url);
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
         page.waitForSelector("#actorTreeBody .tree-node");
 
         page.locator("#actorTreeBody .tree-node")
@@ -77,8 +75,7 @@ public class S67_ActorActionDiscoveryE2E {
 
     private void builtinAction_putJson_hasNoDocsLink() {
         page.navigate(url);
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
         page.waitForSelector("#actorTreeBody .tree-node");
 
         // interpreter has putJson as a built-in action without Javadoc
@@ -104,10 +101,6 @@ public class S67_ActorActionDiscoveryE2E {
 
     // ---- helpers -------------------------------------------------------
 
-    private void openSidebarMenu() {
-        page.click("#sidebarMenuBtn");
-        page.waitForFunction("() => document.getElementById('sidebarMenu').style.display !== 'none'");
-    }
 
     private static void assertEqual(String label, Object expected, Object actual) {
         if (!expected.equals(actual)) {

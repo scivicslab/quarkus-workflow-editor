@@ -192,21 +192,12 @@ public class S45_SseLogDisplayE2E {
 
     private void setupAndRun(String yaml, String logLevel) {
         Path tmpFile = writeTempYaml(yaml);
-        page.navigate(url);
-        page.waitForSelector("#stepsContainer .step-group");
-
-        // Wait for the import API response to ensure YAML is fully processed server-side
-        page.waitForResponse("**/api/yaml/import", () -> {
-            FileChooser fc = page.waitForFileChooser(() -> page.click("#importYamlHeaderBtn"));
-            fc.setFiles(tmpFile);
-        });
-        page.waitForSelector("#stepsContainer .step-group");
+        importYaml(tmpFile);
 
         page.selectOption("#logLevelSelect", logLevel);
         // Wait for log level to be applied to the server
         page.waitForTimeout(500);
 
-        page.click("#runBtn");
         page.waitForFunction("() => document.getElementById('sidePanelRun').style.display !== 'none'");
         page.click("#paramExecute");
     }
@@ -231,5 +222,31 @@ public class S45_SseLogDisplayE2E {
         if (!condition) {
             throw new AssertionError(label + ": expected true");
         }
+    }
+
+    /**
+     * Puts one workflow into the editor.
+     *
+     * <p>Posted to the import endpoint rather than chosen from a file dialog: Import YAML opens
+     * the catalog now, so waiting for a file chooser waits for ever. This is the same endpoint
+     * the catalog import ends up calling.
+     */
+    private void importYaml(Path file) {
+        try {
+            String yaml = Files.readString(file);
+            java.net.http.HttpResponse<String> r = java.net.http.HttpClient.newHttpClient().send(
+                    java.net.http.HttpRequest.newBuilder()
+                            .uri(java.net.URI.create(url + "/api/yaml/import"))
+                            .header("Content-Type", "text/plain")
+                            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(yaml))
+                            .build(),
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (r.statusCode() != 200)
+                throw new AssertionError("import returned HTTP " + r.statusCode() + ": " + r.body());
+        } catch (Exception e) {
+            throw new RuntimeException("could not import the workflow", e);
+        }
+        page.navigate(url);
+        page.waitForSelector("#stepsContainer .step-group");
     }
 }

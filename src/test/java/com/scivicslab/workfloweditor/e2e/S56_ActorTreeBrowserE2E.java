@@ -21,7 +21,7 @@ public class S56_ActorTreeBrowserE2E {
         System.out.println("S56 ActorTreeBrowser: start");
 
         // Actor Tree
-        sidebarMenuBtn_exists();
+        sidePanelTabs_areOnScreen();
         panelOpensOnTreeBtnClick();
         fiveStandardActorsShown();
         shellActor_showsExecAction();
@@ -40,25 +40,28 @@ public class S56_ActorTreeBrowserE2E {
 
     // ---- Actor Tree scenarios ------------------------------------------
 
-    private void sidebarMenuBtn_exists() {
+    /**
+     * The side panel used to be reached through a menu button, #sidebarMenuBtn, whose items
+     * included #treeBtn. It is now always on screen, and its views are chosen by the tabs in its
+     * header, so both of those ids are gone.
+     */
+    private void sidePanelTabs_areOnScreen() {
         page.navigate(url);
-        page.waitForSelector("#sidebarMenuBtn");
+        page.waitForSelector("#sidePanel");
 
-        assertTrue("sidebarMenuBtn: button is visible", page.locator("#sidebarMenuBtn").isVisible());
+        assertTrue("sidePanel: the panel is visible", page.locator("#sidePanel").isVisible());
+        assertEqual("side-tab: the actors tab is labelled 'Actors'",
+                "Actors", page.locator(".side-tab[data-tab='actors']").textContent().trim());
+        assertEqual("side-tab: four views to choose from", 4,
+                page.locator(".side-tab").count());
 
-        // Open menu and verify Actor Tree item exists with correct label
-        openSidebarMenu();
-        assertEqual("treeBtn: text is 'Actor Tree'",
-                "Actor Tree", page.locator("#treeBtn").textContent().trim());
-
-        System.out.println("  sidebarMenuBtn_exists: PASSED");
+        System.out.println("  sidePanelTabs_areOnScreen: PASSED");
     }
 
     private void panelOpensOnTreeBtnClick() {
         page.navigate(url);
 
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
         page.waitForFunction("() => document.getElementById('sidePanel').style.display !== 'none'");
 
         assertTrue("panelOpensOnClick: side panel is visible",
@@ -69,8 +72,7 @@ public class S56_ActorTreeBrowserE2E {
 
     private void fiveStandardActorsShown() {
         page.navigate(url);
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
 
         page.waitForFunction(
                 "() => document.querySelectorAll('#actorTreeBody .tree-node').length === 5",
@@ -84,8 +86,7 @@ public class S56_ActorTreeBrowserE2E {
 
     private void shellActor_showsExecAction() {
         page.navigate(url);
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
         page.waitForSelector("#actorTreeBody .tree-node");
 
         page.locator("#actorTreeBody .tree-node")
@@ -106,8 +107,7 @@ public class S56_ActorTreeBrowserE2E {
 
     private void interpreterActor_showsStatusLabel() {
         page.navigate(url);
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
         page.waitForSelector("#actorTreeBody .tree-node");
 
         page.locator("#actorTreeBody .tree-node")
@@ -126,8 +126,7 @@ public class S56_ActorTreeBrowserE2E {
 
     private void loaderActor_showsLoadJarAndCreateChild() {
         page.navigate(url);
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
         page.waitForSelector("#actorTreeBody .tree-node");
 
         page.locator("#actorTreeBody .tree-node")
@@ -150,8 +149,7 @@ public class S56_ActorTreeBrowserE2E {
 
     private void panelClosesWithXButton() {
         page.navigate(url);
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
         page.waitForFunction("() => document.getElementById('sidePanel').style.display !== 'none'");
 
         page.click("#sidePanelClose");
@@ -167,8 +165,7 @@ public class S56_ActorTreeBrowserE2E {
 
     private void pluginsPanel_opensAndShowsItems() {
         page.navigate(url);
-        openSidebarMenu();
-        page.click("#pluginsBtn");
+        page.click(".side-tab[data-tab='plugins']");
 
         page.waitForFunction("() => document.getElementById('sidePanel').style.display !== 'none'");
         page.waitForFunction("() => document.getElementById('sidePanelPlugins').style.display !== 'none'");
@@ -193,11 +190,10 @@ public class S56_ActorTreeBrowserE2E {
         page.navigate(url);
 
         // Open Actors panel via sidebar menu
-        openSidebarMenu();
-        page.click("#treeBtn");
+        page.click(".side-tab[data-tab='actors']");
         page.waitForFunction("() => document.getElementById('sidePanelActors').style.display !== 'none'");
 
-        assertTrue("switchTabs: actors panel visible after treeBtn",
+        assertTrue("switchTabs: actors panel visible after the Actors tab",
                 page.locator("#sidePanelActors").isVisible());
 
         // Switch to Plugins tab via side-tab inside the panel
@@ -218,11 +214,6 @@ public class S56_ActorTreeBrowserE2E {
     }
 
     // ---- helpers -------------------------------------------------------
-
-    private void openSidebarMenu() {
-        page.click("#sidebarMenuBtn");
-        page.waitForFunction("() => document.getElementById('sidebarMenu').style.display !== 'none'");
-    }
 
     private static void assertEqual(String label, Object expected, Object actual) {
         if (!expected.equals(actual)) {

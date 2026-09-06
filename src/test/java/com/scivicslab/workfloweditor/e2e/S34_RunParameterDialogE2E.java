@@ -6,10 +6,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * E2E tests for S3→S4: Run button and Parameter Panel.
- * Verifies that the run panel opens, parameter inputs appear for workflow
- * variables, the panel can be closed, and workflow execution can be started
- * and stopped.
+ * E2E tests for S3→S4: the run panel.
+ * Verifies that the panel is on screen with its Start button, that parameter inputs appear for
+ * workflow variables, that the panel can be closed, and that execution can be started and
+ * stopped.
+ *
+ * <p>There is no run button to press first. The panel opens with the page, and #paramExecute is
+ * its Start button.
  */
 public class S34_RunParameterDialogE2E {
 
@@ -24,7 +27,7 @@ public class S34_RunParameterDialogE2E {
     public void run() {
         System.out.println("S34 RunParameterDialog: start");
 
-        runButton_opensRunPanel();
+        runPanel_isOpenWithItsStartButton();
         yamlWithVariables_showsRequiredParamInputs();
         closePanel_panelBecomesHidden();
         startExecution_stopBtnBecomesEnabled();
@@ -35,11 +38,9 @@ public class S34_RunParameterDialogE2E {
 
     // ---- scenarios -----------------------------------------------------
 
-    private void runButton_opensRunPanel() {
+    private void runPanel_isOpenWithItsStartButton() {
         page.navigate(url);
         page.waitForSelector("#stepsContainer .step-group");
-
-        page.click("#runBtn");
 
         page.waitForFunction("() => document.getElementById('sidePanel').style.display !== 'none'");
         page.waitForFunction("() => document.getElementById('sidePanelRun').style.display !== 'none'");
@@ -62,19 +63,12 @@ public class S34_RunParameterDialogE2E {
                     arguments: ${task}
                 """;
         Path tmpFile = writeTempYaml(yaml, "e2e-param-");
-
-        page.navigate(url);
-        page.waitForSelector("#stepsContainer .step-group");
-
-        FileChooser fileChooser = page.waitForFileChooser(
-                () -> page.click("#importYamlHeaderBtn"));
-        fileChooser.setFiles(tmpFile);
+        importYaml(tmpFile);
 
         page.waitForFunction(
                 "() => document.querySelector('.step-from') && " +
                 "document.querySelector('.step-from').value === '0'");
 
-        page.click("#runBtn");
         page.waitForFunction("() => document.getElementById('sidePanelRun').style.display !== 'none'");
         page.waitForFunction(
                 "() => document.querySelector('[data-param-key=\"task\"]') !== null");
@@ -90,7 +84,6 @@ public class S34_RunParameterDialogE2E {
         page.navigate(url);
         page.waitForSelector("#stepsContainer .step-group");
 
-        page.click("#runBtn");
         page.waitForFunction("() => document.getElementById('sidePanel').style.display !== 'none'");
 
         page.click("#sidePanelClose");
@@ -104,20 +97,22 @@ public class S34_RunParameterDialogE2E {
     }
 
     private void startExecution_stopBtnBecomesEnabled() {
+        // A step that sleeps, not one that prints: Stop is enabled only while something is
+        // running, and printing one line finishes before the browser is asked about the button.
+        // stopExecution_stoppedEventInLog below sleeps for the same reason.
         String yaml = """
                 name: start-test-wf
                 steps:
                 - states: ["0", "1"]
-                  note: quick step
+                  note: long running step
                   actions:
-                  - actor: out
-                    method: print
-                    arguments: hello
+                  - actor: shell
+                    method: exec
+                    arguments: sleep 30
                 """;
         Path tmpFile = writeTempYaml(yaml, "e2e-start-");
         importYaml(tmpFile);
 
-        page.click("#runBtn");
         page.waitForFunction("() => document.getElementById('sidePanelRun').style.display !== 'none'");
 
         page.click("#paramExecute");
@@ -128,6 +123,13 @@ public class S34_RunParameterDialogE2E {
 
         assertTrue("startExecution: stop button is enabled",
                 !Boolean.parseBoolean(page.locator("#stopBtn").getAttribute("disabled")));
+
+        // Leave nothing running: the sleep would still hold the interpreter when the next
+        // scenario starts its own workflow.
+        page.click("#stopBtn");
+        page.waitForFunction(
+                "() => document.getElementById('stopBtn').disabled",
+                null, new Page.WaitForFunctionOptions().setTimeout(30000));
 
         System.out.println("  startExecution_stopBtnBecomesEnabled: PASSED");
     }
@@ -150,7 +152,6 @@ public class S34_RunParameterDialogE2E {
         // Set log level so stopped events are visible (they always pass, but select FINE to see all)
         page.selectOption("#logLevelSelect", "FINE");
 
-        page.click("#runBtn");
         page.waitForFunction("() => document.getElementById('sidePanelRun').style.display !== 'none'");
         page.click("#paramExecute");
 
@@ -179,14 +180,29 @@ public class S34_RunParameterDialogE2E {
 
     // ---- helpers -------------------------------------------------------
 
+    /**
+     * Puts one workflow into the editor.
+     *
+     * <p>Posted to the import endpoint rather than chosen from a file dialog: Import YAML opens
+     * the catalog now, so waiting for a file chooser waits for ever. This is the same endpoint
+     * the catalog import ends up calling.
+     */
     private void importYaml(Path file) {
+        try {
+            String yaml = Files.readString(file);
+            java.net.http.HttpResponse<String> r = java.net.http.HttpClient.newHttpClient().send(
+                    java.net.http.HttpRequest.newBuilder()
+                            .uri(java.net.URI.create(url + "/api/yaml/import"))
+                            .header("Content-Type", "text/plain")
+                            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(yaml))
+                            .build(),
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (r.statusCode() != 200)
+                throw new AssertionError("import returned HTTP " + r.statusCode() + ": " + r.body());
+        } catch (Exception e) {
+            throw new RuntimeException("could not import the workflow", e);
+        }
         page.navigate(url);
-        page.waitForSelector("#stepsContainer .step-group");
-        // Use the direct header button (always visible, no menu needed)
-        page.waitForResponse("**/api/yaml/import", () -> {
-            FileChooser fc = page.waitForFileChooser(() -> page.click("#importYamlHeaderBtn"));
-            fc.setFiles(file);
-        });
         page.waitForSelector("#stepsContainer .step-group");
     }
 

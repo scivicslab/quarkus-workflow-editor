@@ -14,11 +14,19 @@ import java.nio.file.Path;
  * E2E tests for (Y_exp→Y_yaml).02: catalog search and import.
  * Places a known workflow YAML in a temp scan directory, registers that directory
  * via PUT /api/catalog/dirs, and restores the original dirs in tearDown.
+ *
+ * <p>The results are a table now — one row per workflow in #catalogTableBody, the name in its
+ * first cell, and the empty state written into #catalogMsg. The classes this used to name,
+ * .catalog-entry, .catalog-entry-name and .catalog-empty, are gone; only .catalog-import-btn
+ * survived the change.
  */
 public class S78_CatalogImportE2E {
 
     private static final String WF_NAME = "e2e-catalog-workflow";
-    private static final String WF_DESC = "unique-e2e-catalog-description";
+    // One word, not a hyphenated phrase: the index tokenises, so "a-b-c" as a whole
+    // matches nothing while any single word in the description matches.
+    private static final String WF_DESC = "zzuniquecatalogkeyword";
+    private static final String OTHER_NAME = "e2e-catalog-other-workflow";
 
     private final Page page;
     private final String url;
@@ -64,6 +72,17 @@ public class S78_CatalogImportE2E {
                     "  - actor: out\n" +
                     "    method: print\n" +
                     "    arguments: catalog-test\n");
+            // A second workflow, so that filtering to one is something the search did rather
+            // than something that was already true.
+            Files.writeString(scanDir.resolve(OTHER_NAME + ".yaml"),
+                    "name: " + OTHER_NAME + "\n" +
+                    "description: an unrelated workflow\n" +
+                    "steps:\n" +
+                    "- states: [\"a\", \"b\"]\n" +
+                    "  actions:\n" +
+                    "  - actor: out\n" +
+                    "    method: print\n" +
+                    "    arguments: other\n");
             setCatalogDirs("[\"" + scanDir.toAbsolutePath() + "\"]");
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("S78: setUp failed", e);
@@ -79,7 +98,10 @@ public class S78_CatalogImportE2E {
         }
         try {
             if (wfFile != null) Files.deleteIfExists(wfFile);
-            if (scanDir != null) Files.deleteIfExists(scanDir);
+            if (scanDir != null) {
+                Files.deleteIfExists(scanDir.resolve(OTHER_NAME + ".yaml"));
+                Files.deleteIfExists(scanDir);
+            }
         } catch (IOException e) {
             System.err.println("S78: tearDown files warning: " + e.getMessage());
         }
@@ -121,10 +143,13 @@ public class S78_CatalogImportE2E {
 
         openCatalog();
         page.waitForFunction(
-                "() => document.querySelector('.catalog-entry-name') !== null");
+                "() => document.querySelector('#catalogTableBody tr') !== null");
 
-        String names = page.locator(".catalog-entry-name").allTextContents().toString();
-        assertTrue("catalog_showsWorkflowEntry: entry name appears", names.contains(WF_NAME));
+        page.waitForFunction(
+                "() => document.querySelectorAll('#catalogTableBody tr').length === 2");
+        String names = page.locator("#catalogTableBody tr").allTextContents().toString();
+        assertTrue("catalog_showsWorkflowEntry: both entries appear",
+                names.contains(WF_NAME) && names.contains(OTHER_NAME));
 
         closeCatalog();
         System.out.println("  catalog_showsWorkflowEntry: PASSED");
@@ -135,16 +160,18 @@ public class S78_CatalogImportE2E {
         page.waitForSelector("#stepsContainer .step-group");
 
         openCatalog();
-        page.waitForFunction("() => document.querySelector('.catalog-entry-name') !== null");
+        page.waitForFunction("() => document.querySelector('#catalogTableBody tr') !== null");
 
         // Search by the unique description keyword
         page.fill("#catalogSearch", WF_DESC);
+        // Typing does not search. The Search button and Enter do.
+        page.click("#catalogSearchBtn");
         page.waitForFunction(
-                "() => document.querySelectorAll('.catalog-entry').length === 1");
+                "() => document.querySelectorAll('#catalogTableBody tr').length === 1");
 
-        String names = page.locator(".catalog-entry-name").allTextContents().toString();
-        assertTrue("catalog_search_filtersEntries: only matching entry remains",
-                names.contains(WF_NAME));
+        String names = page.locator("#catalogTableBody tr").allTextContents().toString();
+        assertTrue("catalog_search_filtersEntries: only the matching entry remains",
+                names.contains(WF_NAME) && !names.contains(OTHER_NAME));
 
         closeCatalog();
         System.out.println("  catalog_search_filtersEntries: PASSED");
@@ -155,13 +182,15 @@ public class S78_CatalogImportE2E {
         page.waitForSelector("#stepsContainer .step-group");
 
         openCatalog();
-        page.waitForFunction("() => document.querySelector('.catalog-entry-name') !== null");
+        page.waitForFunction("() => document.querySelector('#catalogTableBody tr') !== null");
 
         page.fill("#catalogSearch", "xyzzy-no-match-keyword-99999");
-        page.waitForSelector(".catalog-empty");
+        // Typing does not search. The Search button and Enter do.
+        page.click("#catalogSearchBtn");
+        page.waitForFunction("() => document.getElementById('catalogMsg').textContent.trim() !== ''");
 
         assertTrue("catalog_search_noMatch_showsEmptyMessage: empty message visible",
-                page.isVisible(".catalog-empty"));
+                !page.locator("#catalogMsg").textContent().trim().isEmpty());
 
         closeCatalog();
         System.out.println("  catalog_search_noMatch_showsEmptyMessage: PASSED");
@@ -172,12 +201,15 @@ public class S78_CatalogImportE2E {
         page.waitForSelector("#stepsContainer .step-group");
 
         openCatalog();
-        page.waitForFunction("() => document.querySelector('.catalog-entry-name') !== null");
+        page.waitForFunction("() => document.querySelector('#catalogTableBody tr') !== null");
 
-        // Filter to our entry, then click Import
-        page.fill("#catalogSearch", WF_NAME);
+        // Filter to our entry, then click Import. Search by the one-word keyword in the
+        // description, for the same reason as above, and press the button: typing does not
+        // search.
+        page.fill("#catalogSearch", WF_DESC);
+        page.click("#catalogSearchBtn");
         page.waitForFunction(
-                "() => document.querySelectorAll('.catalog-entry').length === 1");
+                "() => document.querySelectorAll('#catalogTableBody tr').length === 1");
         page.locator(".catalog-import-btn").first().click();
 
         // Modal closes and step table reflects the imported workflow
@@ -197,10 +229,15 @@ public class S78_CatalogImportE2E {
 
     // ---- helpers --------------------------------------------------------
 
+    /**
+     * Opens the catalog from the Import YAML button in the header.
+     *
+     * <p>There was a button of its own, #openCatalogBtn, and it is gone. Import YAML is what
+     * opens the catalog now — the same action from the File menu is #importYamlBtn, and this
+     * one needs no menu opened first.
+     */
     private void openCatalog() {
-        page.click("#fileMenuBtn");
-        page.waitForFunction("() => document.getElementById('fileMenu').style.display !== 'none'");
-        page.click("#openCatalogBtn");
+        page.click("#importYamlHeaderBtn");
         page.waitForFunction("() => document.getElementById('catalogOverlay').style.display !== 'none'");
     }
 

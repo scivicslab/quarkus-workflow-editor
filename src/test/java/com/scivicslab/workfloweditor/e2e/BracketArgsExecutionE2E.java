@@ -115,23 +115,43 @@ public class BracketArgsExecutionE2E {
 
     // ---- helpers -----------------------------------------------------------
 
+    /**
+     * Loads one workflow into the editor and starts it.
+     *
+     * <p>The YAML is posted to the import endpoint rather than chosen from a file dialog:
+     * Import YAML opens the catalog now, so waiting for a file chooser waits for ever. The
+     * endpoint is the same one that button's catalog import ends up calling, and the same one
+     * {@link E2ERunner} uses to put the editor into a known state.
+     *
+     * <p>There is no #runBtn to press first. The run panel is open from the start, and
+     * #paramExecute is its Start button.
+     */
     private void setupAndRun(String yaml) {
-        Path tmpFile = writeTempYaml(yaml);
+        importYaml(yaml);
         page.navigate(url);
-        page.waitForSelector("#stepsContainer .step-group");
-
-        page.waitForResponse("**/api/yaml/import", () -> {
-            FileChooser fc = page.waitForFileChooser(() -> page.click("#importYamlHeaderBtn"));
-            fc.setFiles(tmpFile);
-        });
         page.waitForSelector("#stepsContainer .step-group");
 
         page.selectOption("#logLevelSelect", "FINE");
         page.waitForTimeout(300);
 
-        page.click("#runBtn");
         page.waitForFunction("() => document.getElementById('sidePanelRun').style.display !== 'none'");
         page.click("#paramExecute");
+    }
+
+    private void importYaml(String yaml) {
+        try {
+            java.net.http.HttpResponse<String> r = java.net.http.HttpClient.newHttpClient().send(
+                    java.net.http.HttpRequest.newBuilder()
+                            .uri(java.net.URI.create(url + "/api/yaml/import"))
+                            .header("Content-Type", "text/plain")
+                            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(yaml))
+                            .build(),
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (r.statusCode() != 200)
+                throw new AssertionError("import returned HTTP " + r.statusCode() + ": " + r.body());
+        } catch (Exception e) {
+            throw new RuntimeException("could not import the workflow", e);
+        }
     }
 
     private void assertNoExecutionError(String label) {

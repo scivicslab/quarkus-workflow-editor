@@ -3,11 +3,16 @@ package com.scivicslab.workfloweditor.e2e;
 import com.microsoft.playwright.*;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * E2E tests for S1→S2: YAML I/O.
- * Verifies Export (download), Import (file upload), and New workflow creation.
+ * Verifies Export (download) and New workflow creation.
+ *
+ * <p>Importing was here too, as a file chooser: clicking Import YAML used to open one, and the
+ * chosen file's contents were expected in the step table. The button now opens the catalog
+ * instead, so waiting for a file chooser waits for ever. Bringing a YAML that is on disk into
+ * the editor is what {@link S78_CatalogImportE2E} covers, through the catalog the button now
+ * opens, so it is not repeated here.
  */
 public class S12_YamlIOE2E {
 
@@ -25,7 +30,6 @@ public class S12_YamlIOE2E {
         page.waitForSelector("#stepsContainer .step-group");
 
         export_downloadedFileContainsExpectedYaml();
-        importYaml_stepTableReflectsYamlContent();
         newWorkflow_tableResetToTemplate();
 
         System.out.println("S12 YamlIO: PASSED");
@@ -64,50 +68,6 @@ public class S12_YamlIOE2E {
         assertTrue("export: YAML contains note", content.contains("export-test-note"));
 
         System.out.println("  export_downloadedFileContainsExpectedYaml: PASSED");
-    }
-
-    private void importYaml_stepTableReflectsYamlContent() {
-        // Write a known YAML to a temp file
-        String yaml = """
-                name: imported-wf
-                steps:
-                - states: ["imported-from", "imported-to"]
-                  note: imported note
-                  actions:
-                  - actor: out
-                    method: print
-                    arguments: imported-value
-                """;
-        Path tmpFile;
-        try {
-            tmpFile = Files.createTempFile("e2e-import-", ".yaml");
-            Files.writeString(tmpFile, yaml);
-        } catch (Exception e) {
-            throw new RuntimeException("importYaml: could not create temp file", e);
-        }
-
-        page.navigate(url);
-        page.waitForSelector("#stepsContainer .step-group");
-
-        // Use the direct header Import YAML button (always visible, no menu needed)
-        FileChooser fileChooser = page.waitForFileChooser(
-                () -> page.click("#importYamlHeaderBtn"));
-        fileChooser.setFiles(tmpFile);
-
-        // Wait for the step table to reload
-        page.waitForFunction(
-                "() => document.querySelector('.step-from') && " +
-                "document.querySelector('.step-from').value === 'imported-from'");
-
-        Locator firstGroup = page.locator(".step-group").first();
-        assertEqual("importYaml: from field", "imported-from",
-                firstGroup.locator(".step-from").inputValue());
-        assertEqual("importYaml: to field", "imported-to",
-                firstGroup.locator(".step-to").inputValue());
-        assertEqual("importYaml: note field", "imported note",
-                firstGroup.locator(".step-note-input").inputValue());
-
-        System.out.println("  importYaml_stepTableReflectsYamlContent: PASSED");
     }
 
     private void newWorkflow_tableResetToTemplate() {
